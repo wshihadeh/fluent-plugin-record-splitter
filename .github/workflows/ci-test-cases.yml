@@ -1,0 +1,42 @@
+name: CI-TEST-CASES
+
+on:
+
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  test_cases:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu]
+        ruby: [2.5, 2.6]
+
+    runs-on: ${{ matrix.os }}-latest
+    continue-on-error: ${{ endsWith(matrix.ruby, 'head') || matrix.ruby == 'debug' }}
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 1
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ matrix.ruby }}
+
+    - name: Install Dependencies v12
+      run: |
+        gem install bundler -v 1.17.3
+        bundle install  --gemfile=Gemfile.fluentd.0.12 --jobs=4 --retry=3 --path vendor/bundle
+    - name: Run tests
+      run: |
+        bundle exec rake
+
+    - name: Install Dependencies
+      run: |
+        gem install bundler -v 1.17.3
+        bundle install  --gemfile=Gemfile --jobs=4 --retry=3 --path vendor/bundle
+        bundle clean --force
+    - name: Run tests
+      run: |
+        bundle exec rake
